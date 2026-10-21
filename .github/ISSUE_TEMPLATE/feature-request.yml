@@ -1,0 +1,17 @@
+name: Feature request
+description: Suggest an improvement to the existing native graph workflow.
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What are you trying to do?
+      description: Describe the writing or navigation task and current limitation.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Desired behavior
+      description: Explain how it should work with native notes and links.
+    validations:
+      required: true

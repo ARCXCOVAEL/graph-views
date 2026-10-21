@@ -1,0 +1,9 @@
+{
+  "id": "graph-views",
+  "name": "Graph Views",
+  "version": "0.1.1",
+  "minAppVersion": "1.14.4",
+  "description": "Overview, Focused Writing and Structure modes with selection, real-link tracing, branch folding and native-layout pins on Obsidian's existing graph.",
+  "author": "ARCXCOVAEL LLC",
+  "isDesktopOnly": true
+}
