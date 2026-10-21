@@ -14,14 +14,14 @@ Shift-click to select nodes, trace existing connections, fold Structure branches
 
 ## Compatibility
 
-Version **0.1.1 beta** supports **desktop Obsidian 1.14.4 only**. It uses undocumented native graph internals and deliberately refuses integration on other versions. Other desktop versions, operating systems and Android/iOS are not validated. The Graph core plugin must be enabled. Native Local Graph is unchanged.
+Version **0.1.2 beta** supports **desktop Obsidian 1.14.4 only**. It uses undocumented native graph internals and deliberately refuses integration on other versions. Other desktop versions, operating systems and Android/iOS are not validated. The Graph core plugin must be enabled. Native Local Graph is unchanged.
 
 This is an independently developed community addition, not an official Obsidian product. No account, service, network access or other plugin is required.
 
 ## Install the beta
 
 1. Save your work and close Obsidian. Keep an ordinary vault backup.
-2. Download **Graph-Views-0.1.1-beta.zip** from this product repository's **Releases** page.
+2. Download **Graph-Views-0.1.2-beta.zip** from this product repository's **Releases** page.
 3. Extract its `graph-views` folder into your vault's `.obsidian/plugins/` directory.
 4. Reopen Obsidian and enable **Graph Views** under Settings → Community plugins.
 5. Open the native Graph view. The Graph Views toolbar appears above the existing canvas. Choose a root note to try Focused Writing or Structure.

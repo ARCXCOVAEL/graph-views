@@ -1,6 +1,6 @@
 # Graph Views beta guide
 
-Published and maintained by ARCXCOVAEL LLC. Version 0.1.1 beta; desktop Obsidian 1.14.4 only.
+Published and maintained by ARCXCOVAEL LLC. Version 0.1.2 beta; desktop Obsidian 1.14.4 only.
 
 ## Start with your existing graph
 

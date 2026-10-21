@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 — Community submission metadata
+
+- Remove the host application name from the manifest description to satisfy the Community directory scanner.
+- Publish matching numeric-version manifest and release assets for directory discovery.
+- Runtime code, native graph behavior and preference schema are unchanged from 0.1.1.
+
 ## 0.1.1 — Public beta
 
 - Publish Graph Views under ARCXCOVAEL LLC's publisher/maintainer identity.
