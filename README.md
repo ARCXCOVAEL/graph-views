@@ -1,6 +1,6 @@
 # Graph Views
 
-**Public beta · developed and maintained by ARCXCOVAEL LLC.**
+**Public beta · created and maintained by ARCXCOVAEL LLC.**
 
 Give Obsidian's existing graph three useful views without creating a separate graph or duplicating your notes.
 
@@ -26,7 +26,7 @@ This is an independently developed community addition, not an official Obsidian 
 4. Reopen Obsidian and enable **Graph Views** under Settings → Community plugins.
 5. Open the native Graph view. The Graph Views toolbar appears above the existing canvas. Choose a root note to try Focused Writing or Structure.
 
-For an update, replace only the seven distributed files; preserve your own `data.json`, `data.json.previous` and any lock evidence. The beta is a manual GitHub release; it has not been accepted into the official community directory.
+For an update, replace only the seven distributed files; preserve your own `data.json`, `data.json.previous` and any lock evidence. Graph Views is available in [Community Plugins](https://community.obsidian.md/plugins/graph-views), alongside the manual package above.
 
 [Full guide and recovery](GUIDE.md) · [Changes](CHANGELOG.md) · Report a problem using this product repository's **Issues → Bug report** form
 
@@ -45,7 +45,5 @@ Disable Graph Views to restore native graph behavior, retaining its settings for
 ## Source and license
 
 The source for this beta is provided in this repository under the [Mozilla Public License 2.0](LICENSE). Distributed changes to covered files must meet the MPL's source-availability requirements; private modifications do not require publication. See [retained notices and dependencies](THIRD_PARTY_NOTICES.md).
-
-Development used AI-assisted tools under human product direction and testing. Publisher attribution does not assert exclusive ownership of Obsidian, general graph techniques, third-party material or non-copyrightable output.
 
 Build without downloads using Node.js 22 or later: `node test.cjs`, then `node build.cjs /absolute/path/to/new-output`. See [development](DEVELOPING.md) and [contributing](CONTRIBUTING.md).
