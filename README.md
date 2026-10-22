@@ -18,15 +18,27 @@ Version **0.1.2 beta** supports **desktop Obsidian 1.14.4 only**. It uses undocu
 
 This is an independently developed community addition, not an official Obsidian product. No account, service, network access or other plugin is required.
 
-## Install the beta
+## Install the Beta
+
+### Community Plugins (recommended)
+
+1. Save your work and keep an ordinary vault backup.
+2. In Obsidian, open **Settings → Community plugins → Browse**.
+3. Search for **Graph Views** by **ARCXCOVAEL LLC**.
+4. Select **Install**, then **Enable**.
+5. Open the native Graph view. The Graph Views toolbar appears above the existing canvas. Choose a root note to try Focused Writing or Structure.
+
+You can also find Graph Views on its [Community Plugins page](https://community.obsidian.md/plugins/graph-views).
+
+### Manual installation from GitHub
 
 1. Save your work and close Obsidian. Keep an ordinary vault backup.
-2. Download **Graph-Views-0.1.2-beta.zip** from this product repository's **Releases** page.
+2. Download **Graph-Views-0.1.2-beta.zip** from this product repository's [Releases page](https://github.com/ARCXCOVAEL/graph-views/releases).
 3. Extract its `graph-views` folder into your vault's `.obsidian/plugins/` directory.
 4. Reopen Obsidian and enable **Graph Views** under Settings → Community plugins.
 5. Open the native Graph view. The Graph Views toolbar appears above the existing canvas. Choose a root note to try Focused Writing or Structure.
 
-For an update, replace only the seven distributed files; preserve your own `data.json`, `data.json.previous` and any lock evidence. Graph Views is available in [Community Plugins](https://community.obsidian.md/plugins/graph-views), alongside the manual package above.
+For a manual update, replace only the seven distributed files; preserve your own `data.json`, `data.json.previous` and any lock evidence.
 
 [Full guide and recovery](GUIDE.md) · [Changes](CHANGELOG.md) · Report a problem using this product repository's **Issues → Bug report** form
 
