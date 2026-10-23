@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.3 beta — 2026-10-22
+
+- Extend the explicit desktop compatibility allowlist to Obsidian 1.14.5 alongside 1.14.4.
+- Keep native capability checks and the unsupported-version refusal; no automatic support for future versions is implied.
+- Preserve note contents, native graph identities, plugin ID, and existing settings format.
+- Refresh the native renderer when any serialized projected graph field changes, including opaque node fields, link values and top-level native data.
+- Obsidian 1.14.5 updates Electron with security fixes; upgrade the installer without removing the existing vault.
+
+
 ## 0.1.2 — Community submission metadata
 
 - Remove the host application name from the manifest description to satisfy the Community directory scanner.

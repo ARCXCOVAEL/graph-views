@@ -1,10 +1,10 @@
 # Graph Views beta guide
 
-Created and maintained by ARCXCOVAEL LLC. Version 0.1.2 beta; desktop Obsidian 1.14.4 only.
+Created and maintained by ARCXCOVAEL LLC. Version 0.1.3 beta; Windows desktop Obsidian 1.14.4 or 1.14.5.
 
 ## Start with your existing graph
 
-Requires desktop Obsidian1.14.4, native Graph enabled, and Graph Views enabled. Open Graph view normally. A Graph Views toolbar appears above the **same native canvas**. Your file explorer, original notes and native graph controls remain available.
+Requires Windows desktop Obsidian 1.14.4 or 1.14.5, native Graph enabled, and Graph Views enabled. Open Graph view normally. A Graph Views toolbar appears above the **same native canvas**. Your file explorer, original notes and native graph controls remain available.
 
 Use the mode dropdown. All open global Graph panes share mode/settings; selections and temporary path traces belong to each pane. Native Local Graph remains unchanged.
 
@@ -54,3 +54,5 @@ Before upgrading Obsidian, disable Graph Views until the new version is tested. 
 Preferences live only in this plugin's data.json, with data.json.previous as the prior successful save. Malformed, externally changed or locked preferences are refused rather than overwritten. Close Obsidian, retain both files plus any lock, inspect the conflict, and restore a validated copy if needed. Never blindly delete a lock while another instance is running. Notes and native graph data are not recovery inputs for these preferences.
 
 To share: give a tester only the clean package's seven files, including LICENSE and THIRD_PARTY_NOTICES.md. Do not include your data.json, vault registry, notes, private exclusions or other applications' private state. Friend testing and human acceptance of layout/readability remain separate from developer checks.
+
+Compatibility acceptance covers Windows only. Other operating systems remain unvalidated.

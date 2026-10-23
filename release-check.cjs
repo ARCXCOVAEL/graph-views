@@ -11,6 +11,10 @@ const license=fs.readFileSync(path.join(root,'LICENSE'),'utf8'),notice=fs.readFi
 for(const n of ['README.md','GUIDE.md','CHANGELOG.md','CONTRIBUTING.md','SECURITY.md','DEVELOPING.md']){const t=fs.readFileSync(path.join(root,n),'utf8');assert(!/[A-Z]:[\\/]/.test(t),n+' contains a machine-specific absolute path');}
 assert(!JSON.stringify(require('./config.cjs').defaults()).includes('Knowledge'));
 if(out){assert(path.isAbsolute(out));const files=['GUIDE.md','LICENSE','README.md','SHA256SUMS.txt','THIRD_PARTY_NOTICES.md','main.js','manifest.json'].sort();assert.deepEqual(fs.readdirSync(out).sort(),files);for(const n of files.filter(n=>!['main.js','SHA256SUMS.txt'].includes(n)))assert(fs.readFileSync(path.join(root,n)).equals(fs.readFileSync(path.join(out,n))),n+' differs');const rows=fs.readFileSync(path.join(out,'SHA256SUMS.txt'),'utf8').trim().split('\n');assert.equal(rows.length,6);for(const line of rows){const match=/^([a-f0-9]{64})  ([A-Za-z_.-]+)$/.exec(line);assert(match&&files.includes(match[2]));assert.equal(hash(fs.readFileSync(path.join(out,match[2]))),match[1]);}}
+
+// Independently rebuild from this reviewed source; a self-consistent checksum
+// file alone cannot bind an arbitrary main.js to its claimed source.
+if(out){const os=require('node:os'),cp=require('node:child_process'),temp=fs.mkdtempSync(path.join(os.tmpdir(),'graph-views-release-')),expected=path.join(temp,'expected');try{const built=cp.spawnSync(process.execPath,[path.join(root,'build.cjs'),expected],{encoding:'utf8',windowsHide:true});assert.equal(built.status,0,'Independent source build failed');assert(fs.readFileSync(path.join(out,'main.js')).equals(fs.readFileSync(path.join(expected,'main.js'))),'Packaged main.js differs from reviewed source build');}finally{fs.rmSync(temp,{recursive:true,force:true});}}
 const publicExport=process.argv[3]?verifySourceExport(process.argv[3]):null;console.log(JSON.stringify({metadataPassed:true,licenseAndNoticesPassed:true,portableDocumentationPassed:true,packagePassed:!!out,publicExport,runtimeAccessed:false}));
 }
 module.exports={verifySourceExport,publicFiles};if(require.main===module)run();

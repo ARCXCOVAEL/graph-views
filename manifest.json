@@ -1,7 +1,7 @@
 {
   "id": "graph-views",
   "name": "Graph Views",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "minAppVersion": "1.14.4",
   "description": "Explore the native graph with Overview, Focused Writing and Structure views, real-link tracing, branch folding and saved node positions.",
   "author": "ARCXCOVAEL LLC",
