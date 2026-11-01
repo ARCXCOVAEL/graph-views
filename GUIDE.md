@@ -1,6 +1,6 @@
 # Graph Views beta guide
 
-Created and maintained by ARCXCOVAEL LLC. Version 0.1.3 beta; Windows desktop Obsidian 1.14.4 or 1.14.5.
+Created and maintained by ARCXCOVAEL LLC. Version 0.1.4 beta; Windows desktop Obsidian 1.14.4 or 1.14.5.
 
 ## Start with your existing graph
 
@@ -19,7 +19,7 @@ Structure uses the table of contents **you already express through note links**.
 ## Choose and expand a subject
 
 1. Click **Choose root**, type a note's name/path, and choose the existing note. In Overview this starts Focused Writing; in Structure it changes the Structure root.
-2. Increase **Depth** (1–12) to reveal more real connections. The status reports visible nodes/links and connections continuing outside the current view.
+2. Use **↑** beside **Depth** to move one level toward the root (−1), or **↓** to explore one level deeper (+1). The input stays editable and shows the current depth (1–12). Arrows stop at the limits; depth controls are inactive in Overview. The status reports visible nodes/links and connections continuing outside the current view.
 3. Shift-click one or more native graph nodes to select them. **Focus selection** or **Structure selection** uses those exact nodes as roots. Normal clicks still open the original note; native modifier behavior otherwise remains unchanged.
 4. In Structure, select a branch and click **Fold / unfold selected**. Traversal stops there. A shared note can remain visible through another unfolded branch. **Unfold all** restores traversal.
 

@@ -10,7 +10,7 @@ The native global Graph remains the data source and renderer. There is no custom
 | runtime.cjs | capabilities refuses incompatible native instances; hook restores only an owned callback; NativeGraph wraps native setData/click/worker/options callbacks, projects live native data, switches presets, manages selection/folds/trace/native pins and restores native behavior on dispose |
 | ui.cjs | PickNote chooses existing admitted originals; EditView holds drafts until Apply; Guide renders the shipped guide; Settings configures roots/following; ownModal closes only owned dialogs on unload; attach/paint place controls above the native canvas and display bounded status; CSS is plugin-owned and removed on unload |
 | main.cjs | onload checks exact compatibility and registers scoped lifecycle events; scan skips deferred tabs and owns loaded global graph controllers; commit/saveSoon persist only settings; changeMode/applyAll/renderAll coordinate panes; onunload removes hooks/timers and restores Overview |
-| build.cjs | Builds a self-contained CommonJS bundle and four portable files into a new absolute directory, then hashes them; no personal state read or dependency download |
+| build.cjs | Builds a self-contained CommonJS bundle and seven portable package files into a new absolute directory, then hashes them; no personal state read or dependency download |
 | test.cjs | Synthetic projection/hook/storage regressions; temporary test directory is owned and removed; no installed-vault/network access |
 
 Native internal interfaces are verified on Windows desktop Obsidian 1.14.4 and 1.14.5: dataEngine getOptions/setOptions/updateSearch/render/onOptionsChange, renderer setData/onNodeClick/nodeLookup/nodes and worker postMessage forceNode protocol. Keep the exact version guard until actual native acceptance on another version. Runtime capability checks are an additional gate, not proof of cross-version compatibility.
@@ -27,8 +27,21 @@ Build with Node: `node test.cjs`; `node build.cjs /absolute/path/to/new-output`.
 
 ARCXCOVAEL LLC is the publisher and maintainer. This source is MPL-2.0; retain THIRD_PARTY_NOTICES.md. Public source is exported from the private canonical project through a strict file allowlist; private repository history, maintenance evidence, settings and other products are not release inputs. The public repository is the contribution surface; reconcile accepted contributions into the canonical source before the next export.
 
-The manifest stays numeric (0.1.3); GitHub marks the release as a prerelease and the title/docs say beta. The native compatibility allowlist is 1.14.4 and 1.14.5. `build.cjs` emits seven portable files including license and notices. `release-check.cjs` validates public metadata, source boundaries and packaged legal files; it checks the published beta intent without reading any installed settings.
+The manifest stays numeric (0.1.4); GitHub publishes numeric releases for Community Plugins updates; the title/docs retain the beta label. The native compatibility allowlist is 1.14.4 and 1.14.5. `build.cjs` emits seven portable files including license and notices. `release-check.cjs` validates public metadata, source boundaries and packaged legal files; it checks the published beta intent without reading any installed settings.
 
 Before publishing, run `node release-check.cjs /absolute/package /absolute/public-source`. The export gate rejects unexpected files/directories, links and byte differences against the exact22-file allowlist; Git metadata is not source and is excluded. Separate publication checks must verify that Git history contains only the clean exported root and that commit author email uses the public no-reply address. Focused tests cover an exact export, added private settings and altered bytes.
 
 The native acceptance receipts cover Windows only; other operating systems remain unvalidated. The version allowlist does not establish another platform's compatibility.
+
+## Readable source
+
+Maintain the readable `.cjs` modules, with two-space indentation and the
+repository's 100-column layout target. Preserve literals and original MPL notices.
+The packaged `main.js` is generated from those modules; do not maintain it as
+an independent source copy. `release-check.cjs` verifies the exact source export
+and checks that a package matches a fresh build from that source.
+
+The current synthetic baseline contains 41 checks. Run `node test.cjs` before
+building a fresh package. Formatting, source review, package verification and
+actual native interaction acceptance are separate results. Readability cleanup
+does not change the plugin ID, native renderer, existing links or license.

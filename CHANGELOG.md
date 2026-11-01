@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4 beta — 2026-10-31
+
+- Add adjacent Up (↑) and Down (↓) depth buttons beside the editable depth readout.
+- Up moves one level toward the root (−1); Down explores one level deeper (+1), within the existing 1–12 range.
+- Disable the controls at their limits and in Overview, including before the first graph data arrives.
+- Preserve the existing graph renderer, note contents, settings format and supported Windows desktop versions.
+
 ## 0.1.3 beta — 2026-10-22
 
 - Extend the explicit desktop compatibility allowlist to Obsidian 1.14.5 alongside 1.14.4.
