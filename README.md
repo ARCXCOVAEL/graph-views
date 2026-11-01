@@ -14,7 +14,7 @@ Shift-click to select nodes, trace existing connections, fold Structure branches
 
 ## Compatibility
 
-Version **0.1.4 beta** supports **Windows desktop Obsidian 1.14.4 or 1.14.5**. It uses undocumented native graph internals and deliberately refuses integration on other versions. Other desktop versions, operating systems and Android/iOS are not validated. The Graph core plugin must be enabled. Native Local Graph is unchanged.
+Version **0.1.5 beta** supports **Windows desktop Obsidian 1.14.4 or 1.14.5**. It uses undocumented native graph internals and deliberately refuses integration on other versions. Other desktop versions, operating systems and Android/iOS are not validated. The Graph core plugin must be enabled. Native Local Graph is unchanged.
 
 This is an independently developed community addition, not an official Obsidian product. No account, service, network access or other plugin is required.
 
@@ -33,7 +33,7 @@ You can also find Graph Views on its [Community Plugins page](https://community.
 ### Manual installation from GitHub
 
 1. Save your work and close Obsidian. Keep an ordinary vault backup.
-2. Download **Graph-Views-0.1.4-beta.zip** from this product repository's [Releases page](https://github.com/ARCXCOVAEL/graph-views/releases).
+2. Download **Graph-Views-0.1.5-beta.zip** from this product repository's [Releases page](https://github.com/ARCXCOVAEL/graph-views/releases).
 3. Extract its `graph-views` folder into your vault's `.obsidian/plugins/` directory.
 4. Reopen Obsidian and enable **Graph Views** under Settings → Community plugins.
 5. Open the native Graph view. The Graph Views toolbar appears above the existing canvas. Choose a root note to try Focused Writing or Structure.
@@ -41,6 +41,10 @@ You can also find Graph Views on its [Community Plugins page](https://community.
 For a manual update, replace only the seven distributed files; preserve your own `data.json`, `data.json.previous` and any lock evidence.
 
 [Full guide and recovery](GUIDE.md) · [Changes](CHANGELOG.md) · Report a problem using this product repository's **Issues → Bug report** form
+
+## Get started with your AI
+
+Copy the [AI/AOS starter prompt](GUIDE.md#start-with-your-ai-or-aos) to help your assistant configure existing Graph Views settings around your notes and verify the result.
 
 ## Your files and privacy
 

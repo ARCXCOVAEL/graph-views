@@ -1,6 +1,6 @@
 # Graph Views beta guide
 
-Created and maintained by ARCXCOVAEL LLC. Version 0.1.4 beta; Windows desktop Obsidian 1.14.4 or 1.14.5.
+Created and maintained by ARCXCOVAEL LLC. Version 0.1.5 beta; Windows desktop Obsidian 1.14.4 or 1.14.5.
 
 ## Start with your existing graph
 
@@ -42,6 +42,29 @@ Existing native graph controls remain usable and keep their original immediate-q
 ## Live originals, editing and renaming
 
 Edit, create, link, move and rename notes through Obsidian or another application normally. Native vault/metadata events refresh the graph; Graph Views projects the new native data. Root/pin/fold paths follow native file/folder rename events. It creates no copies and runs no directory crawler, background service or network requests. Graph-side editing of actual note links is future work; use the original note editor today.
+
+## Start with your AI or AOS
+
+Use this prompt with your preferred AI assistant, AI workspace or agentic operating system (AOS). Give it this guide, your goal and the app/file access you choose to provide. Graph Views does not bundle an AI assistant or grant one access to Obsidian.
+
+Copy and paste:
+
+```text
+Help me get started with Graph Views by ARCXCOVAEL LLC in my existing Obsidian vault.
+
+First identify my Obsidian and Graph Views versions, what I want to explore, the existing notes or contents note I want to start from, and the tools you can actually use. Read the current Graph Views guide and my existing project instructions. Ask only for missing information or access.
+
+Help me choose Overview, Focused Writing or Structure for my goal. Explain which settings affect the result, then help adjust roots, Depth, view queries, groups/colors, branch folds and saved pins as needed. Keep the editable 1–12 Depth readout and Up/Down controls in mind; Depth is inactive in Overview. All global Graph panes share mode/settings, while selection and temporary traces belong to each pane.
+
+Use the existing plugin settings and toolbar through my approved app tools. If you cannot control the app, give precise manual steps and say what I need to do. Do not invent plugin APIs or claim a visible result you have not checked. Compose queries in Edit view and apply the complete query once.
+
+Build on my existing notes and real links. A Structure root follows outgoing links from my chosen contents/index note; it does not create a folder hierarchy or infer links from headings. If a view is empty, check the root path, Depth and view query, then inspect Overview and whether the native graph admits the note.
+
+Keep this a Graph Views settings task. Preserve note contents and unrelated preferences. Do not add indexing, cache management, background services or plugin source changes. Prefer supported controls. Before any necessary direct preferences-file edit, close Obsidian, preserve data.json and data.json.previous, and inspect any lock or conflict without blindly deleting it. Keep vault paths and private settings out of shared uploads.
+
+Start with one useful subject and a short plan. Carry out the settings changes I request using the access I have granted. Finish by checking the visible mode, roots, Depth, filters, folds and pins relevant to my goal. Tell me what changed, what you actually verified in Obsidian and any steps still needing my input.
+```
+
 
 ## Recovery and compatibility
 

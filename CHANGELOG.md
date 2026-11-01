@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.5 beta — 2026-11-01
+
+- Add a copy-and-paste AI/AOS starter prompt for existing Graph Views settings and verification.
+- Publish a fresh, verified distribution of the existing Graph Views runtime.
+- Preserve the adjacent Up/Down depth controls, editable readout, view modes, tracing, folding and saved positions.
+- Preserve existing settings, original notes and the supported Windows desktop versions.
+
 ## 0.1.4 beta — 2026-10-31
 
 - Add adjacent Up (↑) and Down (↓) depth buttons beside the editable depth readout.
