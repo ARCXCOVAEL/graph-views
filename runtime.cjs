@@ -37,8 +37,32 @@ function hook(obj, key, make, cleanup) {
   });
   return original;
 }
+// Wrap only the registered native global-graph creator, before its onload runs.
+// A failed guard must not return an unprotected newly created view.
+function guardCreation(registry, prepare, report, cleanup) {
+  const types = registry?.viewByType;
+  if (!types || typeof types !== 'object') throw Error('Native graph creator unavailable');
+  if (typeof types.graph !== 'function') return null;
+  hook(types, 'graph', (original) => function (...args) {
+    const view = original.apply(this, args);
+    const owned = view?.leaf === args[0] && args[0]?.view !== view;
+    try {
+      prepare(view);
+      return view;
+    } catch (error) {
+      if (owned) {
+        try { view.renderer?.destroy(); } catch (cleanupError) {
+          try { report(cleanupError); } catch {}
+        }
+      }
+      try { report(error); } catch {}
+      throw error;
+    }
+  }, cleanup);
+  return types.graph;
+}
 class NativeGraph {
-  constructor(plugin, view) {
+  constructor(plugin, view, beforeLoad = false) {
     this.plugin = plugin;
     this.view = view;
     this.app = plugin.app;
@@ -47,28 +71,95 @@ class NativeGraph {
     this.selected = new Set();
     this.trace = null;
     this.active = true;
-    this.bypassed = false;
+    this.hasDisplay = false;
     this.signature = null;
     this.initialOptions = C.options(this.e.getOptions());
-    this.setting = false;
+    this.beforeLoad = beforeLoad;
+    this.searchPending = beforeLoad;
+    this.setting = beforeLoad;
     this.pinMessages = 0;
     this.error = null;
     try {
+      if (beforeLoad) {
+        if (typeof this.e.setQuery !== 'function' || typeof view.onClose !== 'function')
+          throw Error('Native first-render search integration unavailable');
+        this.cleanup.push(() => this.releaseStartupQueue());
+        const self = this;
+        const closed = () => {
+          self.dispose();
+          if (self.plugin.controllers?.get(view) === self) self.plugin.controllers.delete(view);
+        };
+        hook(view, 'onClose', (original) => function (...args) {
+          let result;
+          try { result = original.apply(this, args); } catch (error) { closed(); throw error; }
+          if (result && typeof result.finally === 'function') return result.finally(closed);
+          closed();
+          return result;
+        }, this.cleanup);
+        // Native setOptions can render before its first query is compiled. Wait
+        // for that existing query pipeline, without constructing unfiltered data.
+        this.originalEngineRender = hook(this.e, 'render', (original) => {
+          const self = this;
+          return function (...args) {
+            if (!self.active) return 0;
+            if (self.searchPending) {
+              const q = self.startupQueue;
+              if (!self.queryPrepared || (q && (self.queryCancelled || this.queue !== q ||
+                q.runnable.isCancelled() || q.runnable.isRunning() || q.items.length !== 0))) return 0;
+              self.searchPending = false;
+              self.releaseStartupQueue();
+            }
+            return original.apply(this, args);
+          };
+        }, this.cleanup);
+        hook(this.e, 'setQuery', (original) => {
+          const self = this;
+          return function (...args) {
+            if (!self.active) return;
+            if (!self.searchPending) return original.apply(this, args);
+            self.queryPrepared = false;
+            self.queryCancelled = false;
+            self.releaseStartupQueue();
+            try {
+              const result = original.apply(this, args), q = this.queue;
+              if (q) {
+                if (typeof q.cancel !== 'function' || typeof q.runnable?.isRunning !== 'function' ||
+                  typeof q.runnable?.isCancelled !== 'function' || !Number.isInteger(q.items?.length))
+                  throw Error('Native startup query completion unavailable');
+                self.startupQueue = q;
+                const cancelCleanup = [];
+                hook(q, 'cancel', (cancel) => function (...rest) {
+                  if (self.searchPending && self.startupQueue === q) self.queryCancelled = true;
+                  return cancel.apply(this, rest);
+                }, cancelCleanup);
+                self.startupCancel = cancelCleanup[0];
+              }
+              self.queryPrepared = true;
+              // An asynchronous queue remains closed through progress callbacks;
+              // only its normal stopped, empty, uncancelled state can admit data.
+              self.e.render();
+              return result;
+            } catch (error) {
+              self.queryPrepared = false;
+              self.releaseStartupQueue();
+              self.reject(error);
+              throw error;
+            }
+          };
+        }, this.cleanup);
+      }
       this.originalSetData = hook(
         this.r,
         'setData',
         (original) => {
           const self = this;
           return function (data) {
-            if (!self.active || self.bypassed) return original.call(this, data);
+            // A callback retained by the host must not submit data after unload.
+            if (!self.active) return;
             try {
-              self.g = M.index(data);
-              return self.render();
+              return self.render(data);
             } catch (e) {
-              self.bypassed = true;
-              self.signature = null;
-              self.fail(e);
-              return original.call(this, data);
+              self.reject(e);
             }
           };
         },
@@ -150,29 +241,80 @@ class NativeGraph {
       throw e;
     }
   }
+  // Only the current pending native queue needs cancellation tracking.
+  releaseStartupQueue() {
+    const close = this.startupCancel;
+    this.startupCancel = null;
+    this.startupQueue = null;
+    close?.();
+  }
   roots() {
     const s = this.plugin.cfg;
     return s.mode === 'structure' ? s.structureRoots : s.focusRoots;
   }
-  // Projection skips identical native setData calls; no perpetual animation loop.
-  render() {
-    if (!this.active || this.bypassed || !this.g) return;
-    const cfg = this.plugin.cfg,
-      p = M.project(this.g, {
-        mode: cfg.mode,
-        roots: this.roots(),
-        depth: cfg.depth,
-        folded: new Set(cfg.folded),
-        selected: this.selected,
-        trace: this.trace,
-      });
-    if (p.signature !== this.signature) {
-      this.originalSetData.call(this.r, p.data);
-      this.signature = p.signature;
-      this.applyPins();
+  // Every native update is indexed before projection. A rejected update never
+  // reaches the renderer, even after an earlier failure or in Overview.
+  render(data) {
+    if (!this.active || (!arguments.length && !this.g)) return;
+    try {
+      // Native objects can be mutated in place between updates and control actions.
+      this.g = M.index(arguments.length ? data : this.g.data);
+      const cfg = this.plugin.cfg,
+        p = M.project(this.g, {
+          mode: cfg.mode,
+          roots: this.roots(),
+          depth: cfg.depth,
+          folded: new Set(cfg.folded),
+          selected: this.selected,
+          trace: this.trace,
+        });
+      if (p.signature !== this.signature) {
+        // A throwing renderer may have partially replaced its previous display.
+        this.hasDisplay = false;
+        this.signature = null;
+        this.originalSetData.call(this.r, p.data);
+        this.hasDisplay = true;
+        this.signature = p.signature;
+        this.applyPins();
+      }
+      this.stats = p;
+      this.error = null;
+      this.plugin.paint(this);
+    } catch (e) {
+      this.reject(e);
     }
-    this.stats = p;
-    this.plugin.paint(this);
+  }
+  // Keep the renderer's last safe display, without retaining a second data copy.
+  // Drop the old index so controls cannot reproject stale/mutated rejected input.
+  // Until a display is confirmed, only an empty graph may reach the renderer.
+  reject(e) {
+    this.g = null;
+    this.stats = null;
+    let display = 'Last safe display kept.';
+    if (!this.hasDisplay) {
+      this.signature = null;
+      try {
+        this.originalSetData.call(this.r, { nodes: {}, numLinks: 0 });
+        this.hasDisplay = true;
+        display = 'Empty display shown.';
+      } catch {
+        display = 'Native renderer could not confirm an empty display.';
+      }
+    }
+    this.error =
+      'Graph update blocked: ' + (e?.message || String(e)) + '. ' + display +
+      ' Reduce the native graph using Edit view / Search query or exclusions, then Apply view.' +
+      ' Limits are 100,000 nodes and 500,000 links before depth or folding.';
+    // Presentation failure must never re-enable raw-data forwarding.
+    try {
+      this.plugin.paint(this);
+    } catch (error) {
+      try {
+        this.plugin.report(error);
+      } catch {
+        // The guard remains closed even when the host cannot display an error.
+      }
+    }
   }
   fail(e) {
     this.error = e.message;
@@ -233,6 +375,8 @@ class NativeGraph {
     this.plugin.renderAll();
   }
   traceSelected() {
+    // A blocked update has no admitted index; keep its actionable status intact.
+    if (!this.g) return;
     if (this.selected.size !== 2)
       throw Error('Select two nodes to trace their existing connections');
     const [a, b] = this.selected,
@@ -275,29 +419,48 @@ class NativeGraph {
     this.plugin.saveSoon();
     this.plugin.paint(this);
   }
-  // On unload release only owned pins, restore owned hooks, then hand the full
-  // native graph back to its own engine with the latest Overview preferences.
+  // Unload keeps the safe display and restores owned callbacks. Do not request
+  // a full engine refresh: its delayed callbacks could run after guard removal.
+  // Each cleanup is independent so a worker/UI failure cannot strand other hooks.
   dispose() {
     if (!this.active) return;
     this.active = false;
+    const report = (error) => {
+      try {
+        this.plugin.report(error);
+      } catch {
+        // Continue releasing all other owned resources if reporting also fails.
+      }
+    };
     for (const id of Object.keys(this.plugin.cfg.pins)) {
-      const n = this.r.nodeLookup[id];
-      if (n) {
-        n.fx = null;
-        n.fy = null;
-        this.r.worker.postMessage({ forceNode: { id, x: null, y: null }, alpha: 0.3, run: true });
+      try {
+        const n = this.r.nodeLookup[id];
+        if (n) {
+          n.fx = null;
+          n.fy = null;
+          this.r.worker.postMessage({ forceNode: { id, x: null, y: null }, alpha: 0.3, run: true });
+        }
+      } catch (error) {
+        report(error);
       }
     }
-    for (const close of this.cleanup.reverse()) close();
-    if (this.view?._loaded)
+    for (const close of this.cleanup.reverse()) {
       try {
-        this.e.setOptions(this.plugin.cfg.presets.overview || this.initialOptions);
-        this.e.updateSearch();
-        this.e.render();
-      } catch (e) {
-        this.plugin.report(e);
+        close();
+      } catch (error) {
+        report(error);
       }
-    this.bar?.remove();
+    }
+    try {
+      this.bar?.remove();
+    } catch (error) {
+      report(error);
+    }
+    this.g = null;
+    this.stats = null;
+    this.signature = null;
+    this.selected.clear();
+    this.trace = null;
   }
 }
-module.exports = { capabilities, hook, NativeGraph };
+module.exports = { capabilities, hook, guardCreation, NativeGraph };

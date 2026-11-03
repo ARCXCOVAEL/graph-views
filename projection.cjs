@@ -15,23 +15,33 @@ function id(s) {
     throw Error('Invalid graph identifier');
   return s;
 }
-// Build adjacency from the native engine's admitted graph, once per new data.
+// Build bounded adjacency for each native update or visualization request.
 function index(data) {
   if (!data || !data.nodes || typeof data.nodes !== 'object')
     throw Error('Native graph data unavailable');
-  const ids = Object.keys(data.nodes);
-  if (ids.length > 100000) throw Error('Graph exceeds verified processing bound');
+  const ids = [];
+  for (const key in data.nodes) {
+    if (!own(data.nodes, key)) continue;
+    if (ids.length >= 100000) throw Error('Graph exceeds verified processing bound');
+    ids.push(key);
+  }
   const out = new Map(ids.map((k) => [id(k), []])),
     both = new Map(ids.map((k) => [k, new Set()]));
-  let edges = 0;
+  let edges = 0,
+    inputLinks = 0;
   for (const a of ids) {
-    for (const b of Object.keys(data.nodes[a].links || {}))
+    // Count every raw entry, including links to missing nodes, before projection.
+    const links = data.nodes[a].links || {};
+    for (const b in links) {
+      if (!own(links, b)) continue;
+      if (++inputLinks > 500000) throw Error('Graph link bound exceeded');
       if (out.has(b)) {
-        if (++edges > 500000) throw Error('Graph link bound exceeded');
+        edges++;
         out.get(a).push(b);
         both.get(a).add(b);
         both.get(b).add(a);
       }
+    }
   }
   return { data, ids, out, both, edges };
 }
@@ -122,14 +132,19 @@ function project(
     colors = mode === 'structure' ? branchColors(g, roots, visible, folded) : new Map(),
     nodes = {};
   let edges = 0,
-    boundary = 0;
+    boundary = 0,
+    inputLinks = 0;
   for (const a of visible) {
     const original = g.data.nodes[a],
-      links = {};
-    for (const b of Object.keys(original.links || {})) {
+      links = {},
+      nativeLinks = original.links || {};
+    // Native accessors may change links after indexing; bound this read as well.
+    for (const b in nativeLinks) {
+      if (!own(nativeLinks, b)) continue;
+      if (++inputLinks > 500000) throw Error('Graph link bound exceeded');
       if (visible.has(b)) {
         Object.defineProperty(links, b, {
-          value: original.links[b],
+          value: nativeLinks[b],
           enumerable: true,
           writable: true,
           configurable: true,

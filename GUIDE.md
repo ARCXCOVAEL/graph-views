@@ -1,6 +1,6 @@
 # Graph Views beta guide
 
-Created and maintained by ARCXCOVAEL LLC. Version 0.1.5 beta; Windows desktop Obsidian 1.14.4 or 1.14.5.
+Created and maintained by ARCXCOVAEL LLC. Version 0.1.6 beta; Windows desktop Obsidian 1.14.4 or 1.14.5.
 
 ## Start with your existing graph
 
@@ -43,34 +43,11 @@ Existing native graph controls remain usable and keep their original immediate-q
 
 Edit, create, link, move and rename notes through Obsidian or another application normally. Native vault/metadata events refresh the graph; Graph Views projects the new native data. Root/pin/fold paths follow native file/folder rename events. It creates no copies and runs no directory crawler, background service or network requests. Graph-side editing of actual note links is future work; use the original note editor today.
 
-## Start with your AI or AOS
-
-Use this prompt with your preferred AI assistant, AI workspace or agentic operating system (AOS). Give it this guide, your goal and the app/file access you choose to provide. Graph Views does not bundle an AI assistant or grant one access to Obsidian.
-
-Copy and paste:
-
-```text
-Help me get started with Graph Views by ARCXCOVAEL LLC in my existing Obsidian vault.
-
-First identify my Obsidian and Graph Views versions, what I want to explore, the existing notes or contents note I want to start from, and the tools you can actually use. Read the current Graph Views guide and my existing project instructions. Ask only for missing information or access.
-
-Help me choose Overview, Focused Writing or Structure for my goal. Explain which settings affect the result, then help adjust roots, Depth, view queries, groups/colors, branch folds and saved pins as needed. Keep the editable 1–12 Depth readout and Up/Down controls in mind; Depth is inactive in Overview. All global Graph panes share mode/settings, while selection and temporary traces belong to each pane.
-
-Use the existing plugin settings and toolbar through my approved app tools. If you cannot control the app, give precise manual steps and say what I need to do. Do not invent plugin APIs or claim a visible result you have not checked. Compose queries in Edit view and apply the complete query once.
-
-Build on my existing notes and real links. A Structure root follows outgoing links from my chosen contents/index note; it does not create a folder hierarchy or infer links from headings. If a view is empty, check the root path, Depth and view query, then inspect Overview and whether the native graph admits the note.
-
-Keep this a Graph Views settings task. Preserve note contents and unrelated preferences. Do not add indexing, cache management, background services or plugin source changes. Prefer supported controls. Before any necessary direct preferences-file edit, close Obsidian, preserve data.json and data.json.previous, and inspect any lock or conflict without blindly deleting it. Keep vault paths and private settings out of shared uploads.
-
-Start with one useful subject and a short plan. Carry out the settings changes I request using the access I have granted. Finish by checking the visible mode, roots, Depth, filters, folds and pins relevant to my goal. Tell me what changed, what you actually verified in Obsidian and any steps still needing my input.
-```
-
-
 ## Recovery and compatibility
 
 If a view is empty, check its root paths, Depth and Edit view query, then try Overview. A root filtered out of native data cannot appear. Overview means the currently admitted native graph, not excluded technical/cache/backup directories.
 
-If a native integration error appears, that pane falls back to native data and reports the error. Disable Graph Views and reopen native Graph. Disabling releases this plugin's pins, removes its toolbar/hooks and restores the latest Overview preferences. Early filtering and your notes are independent.
+Graph Views never forwards rejected input as a fallback. A blocked update keeps the last safe display, or shows an empty display if none exists, and reports how to narrow the query. Disabling Graph Views removes its guard, releases its pins and removes its owned toolbar/hooks without forcing a native refresh. The current display may remain until Obsidian updates it. Your notes are unchanged.
 
 Before upgrading Obsidian, disable Graph Views until the new version is tested. A version mismatch does not patch native graph internals. The plugin intentionally has a narrow verified version boundary; its hooks are per-instance rather than global prototype changes.
 
@@ -79,3 +56,13 @@ Preferences live only in this plugin's data.json, with data.json.previous as the
 To share: give a tester only the clean package's seven files, including LICENSE and THIRD_PARTY_NOTICES.md. Do not include your data.json, vault registry, notes, private exclusions or other applications' private state. Friend testing and human acceptance of layout/readability remain separate from developer checks.
 
 Compatibility acceptance covers Windows only. Other operating systems remain unvalidated.
+
+## When a graph update is blocked
+
+Graph Views checks the native input before applying Structure, depth or folding. Inputs above 100,000 nodes or 500,000 input links (including links to missing nodes) are blocked. The last safe display stays visible; if none exists, Graph Views submits an empty display. The toolbar explains the block. The visible graph may therefore be older than the latest native data.
+
+Use **Edit view** to narrow the **Search query**, or reduce the native graph using exclusions, then **Apply view**. Reducing depth alone does not reduce the native input. A valid update automatically resumes visualization and clears this status. If the native renderer itself fails, the toolbar reports that an empty display could not be confirmed.
+
+Disabling Graph Views removes its callbacks and releases its pins without requesting a full graph refresh. Further native updates after disabling are managed by Obsidian. This guard addresses a credible crash path; it does not establish the complete cause of a vault crash.
+
+The input guard also attaches before a newly opened native global Graph performs its first update. Graph startup waits for native search initialization; mode presets are preserved during startup. A blocked first update shows an empty display until valid filtered data arrives.

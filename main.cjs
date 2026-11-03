@@ -5,7 +5,7 @@ const { Plugin, Notice, apiVersion } = require('obsidian'),
   path = require('node:path'),
   C = require('./config.cjs'),
   { SettingsStore } = require('./storage.cjs'),
-  { NativeGraph, capabilities } = require('./runtime.cjs'),
+  { NativeGraph, capabilities, guardCreation } = require('./runtime.cjs'),
   UI = require('./ui.cjs');
 module.exports = class GraphViews extends Plugin {
   // Own settings and event-scoped controllers only; do not touch indexing hooks.
@@ -46,6 +46,30 @@ module.exports = class GraphViews extends Plugin {
     style.textContent = UI.CSS;
     document.head.appendChild(style);
     this.register(() => style.remove());
+    try {
+      const registry = this.app.viewRegistry;
+      const install = () => {
+        if (!this.active || registry.viewByType.graph === this.graphCreatorGuard) return;
+        const cleanup = [];
+        this.graphCreatorGuard = guardCreation(registry, (view) => {
+          if (!this.active || !this.cfg) throw Error('Graph Views startup guard unavailable');
+          const c = new NativeGraph(this, view, true);
+          this.controllers.set(view, c);
+        }, (error) => this.report(error), cleanup);
+        for (const close of cleanup) this.register(close);
+      };
+      if (!registry || typeof registry.on !== 'function')
+        throw Error('Native graph creation integration unavailable; keep Graph closed');
+      install();
+      this.registerEvent(registry.on('view-registered', (type) => {
+        if (type === 'graph') {
+          try { install(); } catch (error) { this.report(error); }
+        }
+      }));
+    } catch (error) {
+      this.report(error);
+      return;
+    }
     for (const [mode, name] of [
       ['overview', 'Overview'],
       ['focused', 'Focused Writing'],
@@ -105,28 +129,35 @@ module.exports = class GraphViews extends Plugin {
         .map((l) => l.view),
     );
     for (const [v, c] of this.controllers)
-      if (!views.has(v)) {
+      if (!views.has(v) && !c.beforeLoad) {
         c.dispose();
         this.controllers.delete(v);
       }
-    for (const v of views)
-      if (!this.controllers.has(v) && !this.blocked.has(v)) {
-        let c;
-        try {
-          capabilities(v);
-          if (!this.cfg.presets.overview) this.commit(C.seed(this.cfg, v.dataEngine.getOptions()));
-          c = new NativeGraph(this, v);
-          this.controllers.set(v, c);
-          UI.attach(this, c);
-          c.applyOptions(this.cfg.presets[this.cfg.mode]);
-        } catch (e) {
-          c?.dispose();
-          this.controllers.delete(v);
-          this.blocked.add(v);
-          this.report(e);
+    for (const v of views) {
+      let c = this.controllers.get(v);
+      if ((c && !c.beforeLoad) || this.blocked.has(v)) continue;
+      try {
+        capabilities(v);
+        if (!this.cfg.presets.overview) this.commit(C.seed(this.cfg, v.dataEngine.getOptions()));
+        if (!c) c = new NativeGraph(this, v);
+        this.controllers.set(v, c);
+        c.beforeLoad = false;
+        c.setting = false;
+        UI.attach(this, c);
+        c.applyOptions(this.cfg.presets[this.cfg.mode]);
+      } catch (error) {
+        this.blocked.add(v);
+        // UI/options failures must not remove a working input guard.
+        if (c) {
+          c.beforeLoad = false;
+          c.setting = false;
+          c.reject(error);
         }
+        this.report(error);
       }
+    }
   }
+
   // Debounce layout events so a burst scans graph instances once after the short delay.
   scheduleScan() {
     clearTimeout(this.scanTimer);
@@ -198,8 +229,8 @@ module.exports = class GraphViews extends Plugin {
   paint(c) {
     UI.paint(c);
   }
-  // No background worker survives unload. Hand native graph preferences/data
-  // back after removing only this plugin's instance-owned hooks and pins.
+  // Release owned callbacks and pins without requesting a full native refresh.
+  // Keep the last safe display while removing plugin-owned UI and timers.
   onunload() {
     this.active = false;
     for (const m of this.modals) m.close();

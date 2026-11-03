@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.6 beta — 2026-11-02
+
+- Reject oversized native updates in every mode, keeping the last safe display or an empty display with actionable status.
+- Attach the guard before the first native Graph update and wait for the initial native query to complete before graph data construction.
+- Preserve view settings during startup, release obsolete query hooks, and retain protection across interface errors and delayed view activation.
+- Keep the existing node/link limits, native renderer and Up/Down depth controls. No cache, indexing service or other-plugin dependency is added.
+
 ## 0.1.5 beta — 2026-11-01
 
 - Add a copy-and-paste AI/AOS starter prompt for existing Graph Views settings and verification.

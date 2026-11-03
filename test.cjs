@@ -9,7 +9,7 @@ const assert = require('node:assert/strict'),
 const M = require('./projection.cjs'),
   C = require('./config.cjs'),
   { SettingsStore } = require('./storage.cjs'),
-  { NativeGraph, hook, capabilities } = require('./runtime.cjs');
+  { NativeGraph, hook, capabilities, guardCreation } = require('./runtime.cjs');
 let count = 0;
 function check(name, fn) {
   fn();
@@ -173,7 +173,7 @@ function fake() {
       },
       onOptionsChange() {},
     },
-    view = { renderer: r, dataEngine: e, getViewType: () => 'graph', _loaded: true },
+    view = { renderer: r, dataEngine: e, getViewType: () => 'graph', onClose() {}, _loaded: true },
     p = {
       cfg,
       app: { workspace: { getActiveFile: () => null } },
@@ -251,7 +251,7 @@ check('Pin and native drag/release retain chosen positions', () => {
   assert.deepEqual(t.messages.at(-1).forceNode, { id: 'A', x: null, y: null });
   t.c.dispose();
 });
-check('Unload restores exact owned callbacks and full Overview', () => {
+check('Unload restores exact owned callbacks and keeps safe display', () => {
   const t = fake();
   t.p.cfg.followActive = false;
   t.p.cfg.focusRoots = ['Outside'];
@@ -263,7 +263,7 @@ check('Unload restores exact owned callbacks and full Overview', () => {
   assert.equal(t.r.onNodeClick, t.originals.click);
   assert.equal(t.r.worker.postMessage, t.originals.worker);
   assert.equal(t.e.onOptionsChange, t.originals.options);
-  assert.equal(t.r.nodes.length, 6);
+  assert.equal(t.r.nodes.length, 5);
 });
 check('Unload never overwrites another plugin later hook', () => {
   const o = { f() {} },
@@ -272,17 +272,6 @@ check('Unload never overwrites another plugin later hook', () => {
   const later = (o.f = () => 3);
   clean[0]();
   assert.equal(o.f, later);
-});
-check('Unexpected graph data fails open once to native', () => {
-  const t = fake();
-  t.r.setData({ nodes: JSON.parse('{"__proto__":{"links":{}}}') });
-  assert(t.c.bypassed);
-  assert(t.p.error);
-  const old = t.p.error;
-  t.r.setData(raw);
-  assert.equal(t.r.nodes.length, 6);
-  assert.equal(t.p.error, old);
-  t.c.dispose();
 });
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'graph-views-test-'));
 try {
@@ -420,7 +409,7 @@ for (const [version, accepted] of [
       };
       vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'main.cjs'), 'utf8'), context);
       const p = new local.exports();
-      p.app = { vault, workspace };
+      p.app = { vault, workspace, viewRegistry: { viewByType: { graph() {} }, on: (name) => ({ name }) } };
       p.manifest = { id: 'graph-views' };
       p.onload();
       assert.equal(
@@ -512,4 +501,404 @@ try {
   fs.rmSync(packageRoot, { recursive: true, force: true });
 }
 
+
+check('Rejected first update shows empty and recovers without a bypass', () => {
+  const t = fake(), bad = { nodes: JSON.parse('{"__proto__":{"links":{}}}') };
+  t.r.setData(bad);
+  assert.deepEqual(t.calls, [{ nodes: {}, numLinks: 0 }]);
+  assert.match(t.c.error, /Graph update blocked.*Empty display shown/);
+  assert.match(t.c.error, /Edit view.*100,000 nodes.*500,000 links/);
+  assert.equal(t.c.g, null);
+  t.r.setData(bad);
+  assert.equal(t.calls.length, 1);
+  t.r.setData(raw);
+  assert.equal(t.r.nodes.length, 6);
+  assert.equal(t.c.error, null);
+  assert.equal(t.p.error, undefined);
+  t.c.dispose();
+});
+check('Real node overflow is blocked before small Structure projection in every mode', () => {
+  const nodes = Object.fromEntries(Array.from({ length: 100001 }, (_, i) => ['N' + i, { links: {} }]));
+  const oversized = { nodes, numLinks: 0 };
+  assert.throws(() => M.index(oversized), /verified processing bound/);
+  delete nodes.N100000;
+  assert.equal(M.index(oversized).ids.length, 100000);
+  nodes.N100000 = { links: {} };
+  for (const mode of M.MODES) {
+    const t = fake();
+    t.p.cfg.mode = mode;
+    t.p.cfg.structureRoots = ['N0'];
+    t.p.cfg.focusRoots = ['N0'];
+    t.p.cfg.depth = 1;
+    t.r.setData(oversized);
+    assert.deepEqual(t.calls, [{ nodes: {}, numLinks: 0 }]);
+    assert.match(t.c.error, /verified processing bound/);
+    t.r.setData(oversized);
+    t.c.render();
+    assert.equal(t.calls.length, 1);
+    t.r.setData(raw);
+    assert.equal(t.c.error, null);
+    assert(t.c.g);
+    t.c.dispose();
+  }
+});
+check('Repeated oversized links preserve last safe display and valid recovery', () => {
+  const nodes = Object.fromEntries(Array.from({ length: 1001 }, (_, i) => ['L' + i, { links: {} }]));
+  const targets = Object.fromEntries(Array.from({ length: 500 }, (_, i) => ['L' + i, true]));
+  for (let i = 0; i < 1000; i++) nodes['L' + i].links = targets;
+  const data = { nodes, numLinks: 500000 };
+  assert.equal(M.index(data).edges, 500000);
+  nodes.L1000.links = { L0: true };
+  assert.throws(() => M.index(data), /link bound/);
+  const t = fake();
+  t.r.setData(raw);
+  const safe = t.calls.at(-1), signature = t.c.signature;
+  t.r.setData(data);
+  t.r.setData(data);
+  t.c.render();
+  assert.equal(t.calls.length, 1);
+  assert.equal(t.calls.at(-1), safe);
+  assert.equal(t.c.signature, signature);
+  assert.equal(t.c.g, null);
+  assert.match(t.c.error, /link bound.*Last safe display kept/);
+  t.r.setData(raw);
+  assert.equal(t.c.error, null);
+  assert.equal(t.calls.length, 1);
+  const changed = { nodes: { Recovered: { links: {} } }, numLinks: 0 };
+  t.r.setData(changed);
+  assert.equal(t.calls.length, 2);
+  assert.deepEqual(Object.keys(t.calls.at(-1).nodes), ['Recovered']);
+  t.c.dispose();
+});
+check('Projection failure never forwards raw data and can recover', () => {
+  const t = fake();
+  t.p.cfg.mode = 'invalid';
+  t.r.setData(raw);
+  assert.deepEqual(t.calls, [{ nodes: {}, numLinks: 0 }]);
+  assert.match(t.c.error, /Unknown view/);
+  t.p.cfg.mode = 'overview';
+  t.r.setData(raw);
+  assert.equal(t.c.error, null);
+  assert.equal(t.calls.length, 2);
+  t.c.dispose();
+});
+check('Renderer and presentation errors cannot reopen raw forwarding', () => {
+  const t = fake(), set = t.c.originalSetData, submitted = [];
+  t.c.originalSetData = function (data) {
+    submitted.push(data);
+    throw Error('native renderer failure');
+  };
+  t.p.paint = () => { throw Error('paint failed'); };
+  t.p.report = () => { throw Error('report failed'); };
+  assert.doesNotThrow(() => t.r.setData(raw));
+  assert.equal(submitted.length, 2);
+  assert.notEqual(submitted[0], raw);
+  assert.deepEqual(submitted[1], { nodes: {}, numLinks: 0 });
+  assert.equal(t.c.g, null);
+  t.c.originalSetData = set;
+  t.p.paint = () => {};
+  t.r.setData(raw);
+  assert.equal(t.c.error, null);
+  assert.equal(t.r.nodes.length, 6);
+  t.c.dispose();
+});
+check('Unload requests no delayed engine refresh and stale callbacks do nothing', () => {
+  const t = fake(), stale = t.r.setData, before = t.calls.length;
+  t.e.setOptions = t.e.updateSearch = t.e.render = () => { throw Error('unload refresh forbidden'); };
+  t.r.setData({ nodes: JSON.parse('{"__proto__":{"links":{}}}') });
+  assert.equal(t.calls.length, before + 1);
+  t.c.dispose();
+  stale(raw);
+  assert.equal(t.calls.length, before + 1);
+  assert.equal(t.r.setData, t.originals.setData);
+  assert.equal(t.c.g, null);
+  assert.equal(t.c.active, false);
+  t.c.dispose();
+});
+check('Worker, cleanup and reporting failures do not strand other unload hooks', () => {
+  const t = fake();
+  t.r.setData(raw);
+  t.c.choose('A');
+  t.c.pin();
+  t.r.worker.postMessage = () => { throw Error('worker failed'); };
+  t.p.report = () => { throw Error('report failed'); };
+  t.c.cleanup.push(() => { throw Error('cleanup failed'); });
+  t.c.bar = { remove() { throw Error('bar failed'); } };
+  assert.doesNotThrow(() => t.c.dispose());
+  assert.equal(t.r.setData, t.originals.setData);
+  assert.equal(t.r.onNodeClick, t.originals.click);
+  assert.equal(t.e.onOptionsChange, t.originals.options);
+  assert.equal(t.r.nodeLookup.A.fx, null);
+  assert.equal(t.c.selected.size, 0);
+});
+
+
+check('Dangling and mixed raw links share the existing 500000-entry limit', () => {
+  const links = Object.fromEntries(Array.from({ length: 500000 }, (_, i) => ['Missing' + i, true]));
+  const data = { nodes: { Home: { links } }, numLinks: 500000 };
+  assert.equal(M.index(data).edges, 0);
+  links.Missing500000 = true;
+  assert.throws(() => M.index(data), /link bound/);
+  const t = fake();
+  t.r.setData(data);
+  assert.deepEqual(t.calls, [{ nodes: {}, numLinks: 0 }]);
+  assert.match(t.c.error, /link bound/);
+  t.r.setData(raw);
+  const safe = t.calls.at(-1);
+  delete links.Missing500000;
+  links.Home = true;
+  assert.throws(() => M.index(data), /link bound/);
+  t.r.setData(data);
+  t.r.setData(data);
+  assert.equal(t.calls.at(-1), safe);
+  assert.equal(t.calls.length, 2);
+  assert.equal(t.c.g, null);
+  t.r.setData(raw);
+  assert.equal(t.c.error, null);
+  assert.equal(t.calls.length, 2);
+  t.c.dispose();
+});
+
+check('Oversized key enumeration stops before inspecting later node/link keys', () => {
+  for (const [kind, limit] of [['node', 100000], ['link', 500000]]) {
+    const target = Object.fromEntries(Array.from({ length: limit + 5 }, (_, i) =>
+      ['K' + i, kind === 'node' ? { links: {} } : true]));
+    let latest = -1;
+    const observed = new Proxy(target, {
+      getOwnPropertyDescriptor(object, key) {
+        const n = Number(key.slice(1));
+        if (Number.isFinite(n)) {
+          latest = Math.max(latest, n);
+          if (n > limit) throw Error('Inspected keys beyond rejection point');
+        }
+        return Reflect.getOwnPropertyDescriptor(object, key);
+      },
+    });
+    const data = kind === 'node' ? { nodes: observed } : { nodes: { Home: { links: observed } } };
+    const t = fake();
+    t.r.setData(data);
+    assert.match(t.c.error, kind === 'node' ? /verified processing bound/ : /link bound/);
+    assert.equal(latest, limit);
+    assert.deepEqual(t.calls, [{ nodes: {}, numLinks: 0 }]);
+    t.c.dispose();
+  }
+});
+check('Inherited node/link keys stay excluded after bounded enumeration', () => {
+  const links = Object.assign(Object.create({ Outside: true }), { A: true });
+  const nodes = Object.assign(Object.create({ Hidden: { links: {} } }), {
+    Home: { links }, A: { links: {} },
+  });
+  const g = M.index({ nodes });
+  assert.deepEqual(g.ids, ['Home', 'A']);
+  assert.equal(g.edges, 1);
+});
+check('Control actions revalidate native objects mutated after a safe update', () => {
+  const t = fake(), data = JSON.parse(JSON.stringify(raw));
+  t.r.setData(data);
+  const safe = t.calls.at(-1);
+  data.nodes.Home.links = Object.fromEntries(Array.from({ length: 500001 }, (_, i) => ['Lost' + i, true]));
+  t.c.render();
+  assert.match(t.c.error, /link bound/);
+  assert.equal(t.c.g, null);
+  assert.equal(t.calls.length, 1);
+  assert.equal(t.calls.at(-1), safe);
+  t.r.setData(raw);
+  assert.equal(t.c.error, null);
+  t.c.dispose();
+});
+
+check('Links changing between validation and projection cannot bypass the bound', () => {
+  const target = Object.fromEntries(Array.from({ length: 500005 }, (_, i) => ['M' + i, true]));
+  let latest = -1, reads = 0;
+  const links = new Proxy(target, {
+    getOwnPropertyDescriptor(object, key) {
+      latest = Math.max(latest, Number(key.slice(1)));
+      if (latest > 500000) throw Error('Projection inspected keys after rejection point');
+      return Reflect.getOwnPropertyDescriptor(object, key);
+    },
+  });
+  const data = { nodes: { Home: { get links() { return ++reads === 1 ? {} : links; } } } };
+  const t = fake();
+  t.r.setData(data);
+  assert.match(t.c.error, /link bound/);
+  assert.equal(reads, 2);
+  assert.equal(latest, 500000);
+  assert.deepEqual(t.calls, [{ nodes: {}, numLinks: 0 }]);
+  assert.equal(t.c.g, null);
+  t.r.setData(raw);
+  assert.equal(t.c.error, null);
+  t.c.dispose();
+});
+check('Trace action while blocked keeps status and permits clean recovery', () => {
+  const t = fake();
+  t.r.setData(raw);
+  t.c.choose('A');
+  t.c.choose('B');
+  t.r.setData({ nodes: JSON.parse('{"__proto__":{"links":{}}}') });
+  const status = t.c.error;
+  assert.doesNotThrow(() => t.c.traceSelected());
+  assert.equal(t.c.error, status);
+  assert.equal(t.p.error, undefined);
+  t.r.setData(raw);
+  assert.equal(t.c.error, null);
+  t.c.traceSelected();
+  assert(t.c.trace);
+  t.c.dispose();
+});
+
+
+function earlyFixture() {
+  const t = fake();
+  t.c.dispose();
+  let builds = 0, saves = 0, ready = false;
+  t.e.render = function () { builds++; t.r.setData(raw); };
+  t.e.setQuery = function () { ready = true; this.render(); };
+  t.p.saveSoon = () => { saves++; };
+  t.c = new NativeGraph(t.p, t.c.view, true);
+  return { ...t, counts: () => ({ builds, saves, ready }) };
+}
+check('First native renderer update is guarded before view onload', () => {
+  const t = fake(); t.c.dispose();
+  t.e.setQuery = function () { this.render(); };
+  const leaf = { view: null }; t.c.view.leaf = leaf;
+  const cleanup = [], registry = { viewByType: { graph: () => t.c.view } };
+  let early;
+  guardCreation(registry, (view) => { early = new NativeGraph(t.p, view, true); }, () => {}, cleanup);
+  const view = registry.viewByType.graph(leaf);
+  assert(early && view === t.c.view);
+  const nodes = Object.fromEntries(Array.from({ length: 100001 }, (_, i) => ['First' + i, { links: {} }]));
+  view.renderer.setData({ nodes });
+  assert.deepEqual(t.calls, [{ nodes: {}, numLinks: 0 }]);
+  assert.match(early.error, /verified processing bound/);
+  const targets = Object.fromEntries(Array.from({ length: 500 }, (_, i) => ['L' + i, true]));
+  const linked = Object.fromEntries(Array.from({ length: 1000 }, (_, i) => ['L' + i, { links: targets }]));
+  linked.Excess = { links: { L0: true } };
+  view.renderer.setData({ nodes: linked }); view.renderer.setData({ nodes: linked });
+  assert.equal(t.calls.length, 1); assert.match(early.error, /link bound/);
+  view.dataEngine.setQuery([]);
+  assert.equal(early.error, null); assert.equal(t.r.nodes.length, 6);
+  early.dispose(); cleanup.reverse().forEach(close => close());
+});
+check('Startup waits for native query and cannot capture partial native preferences', () => {
+  const t = earlyFixture(), before = JSON.stringify(t.p.cfg);
+  t.e.render(); t.e.render(); t.e.onOptionsChange();
+  assert.deepEqual(t.counts(), { builds: 0, saves: 0, ready: false });
+  assert.equal(JSON.stringify(t.p.cfg), before);
+  t.e.setQuery([]);
+  assert.deepEqual(t.counts(), { builds: 1, saves: 0, ready: true });
+  assert.equal(t.r.nodes.length, 6);
+  t.c.beforeLoad = false; t.c.setting = false;
+  t.e.onOptionsChange(); assert.equal(t.counts().saves, 1);
+  t.c.dispose();
+});
+check('Failed first query stays closed and later valid native query recovers', () => {
+  const t = fake(); t.c.dispose(); let failed = true, builds = 0;
+  t.e.render = () => { builds++; t.r.setData(raw); };
+  t.e.setQuery = function () { if (failed) throw Error('query failure'); this.render(); };
+  const c = new NativeGraph(t.p, t.c.view, true);
+  assert.throws(() => t.e.setQuery([]), /query failure/);
+  t.e.render(); assert.equal(builds, 0); assert(c.searchPending);
+  assert.deepEqual(t.calls, [{ nodes: {}, numLinks: 0 }]);
+  failed = false; t.e.setQuery([]);
+  assert.equal(builds, 1); assert.equal(c.error, null); c.dispose();
+});
+check('Creator guard refuses failure and destroys only its new unreturned native renderer', () => {
+  const leaf = { view: null }; let destroyed = 0;
+  const view = { leaf, renderer: { destroy() { destroyed++; } } };
+  const native = () => view, registry = { viewByType: { graph: native } }, cleanup = [];
+  guardCreation(registry, () => { throw Error('attach refused'); }, () => {}, cleanup);
+  assert.throws(() => registry.viewByType.graph(leaf), /attach refused/); assert.equal(destroyed, 1);
+  leaf.view = view;
+  assert.throws(() => registry.viewByType.graph(leaf), /attach refused/); assert.equal(destroyed, 1);
+  cleanup.reverse().forEach(close => close()); assert.equal(registry.viewByType.graph, native);
+  guardCreation(registry, () => {}, () => {}, cleanup);
+  const later = registry.viewByType.graph = () => view;
+  cleanup.at(-1)(); assert.equal(registry.viewByType.graph, later);
+});
+check('Bootstrap setup rolls back render hook if native query hook is unavailable', () => {
+  const t = fake(); t.c.dispose();
+  t.e.setQuery = function () {};
+  Object.defineProperty(t.e, 'setQuery', { writable: false });
+  const render = t.e.render, set = t.r.setData;
+  assert.throws(() => new NativeGraph(t.p, t.c.view, true));
+  assert.equal(t.e.render, render); assert.equal(t.r.setData, set);
+});
+check('Disposed startup callbacks cannot start query work or submit data', () => {
+  const t = earlyFixture(), render = t.e.render, query = t.e.setQuery, set = t.r.setData;
+  t.c.dispose(); render(); query([]); set(raw);
+  assert.deepEqual(t.counts(), { builds: 0, saves: 0, ready: false }); assert.equal(t.calls.length, 0);
+});
+check('A scan UI failure retains the already-installed input guard', () => {
+  const mod = { exports: {} }, vm = require('node:vm');
+  const code = fs.readFileSync(path.join(__dirname, 'main.cjs'), 'utf8');
+  const load = new vm.Script('(function(require,module){' + code + '\n})').runInThisContext();
+  load((name) => name === 'obsidian' ? { Plugin: class {}, Notice: class {}, apiVersion: '1.14.5' }
+    : name === './ui.cjs' ? { attach() { throw Error('UI unavailable'); } } : require(name), mod);
+  const t = earlyFixture(), p = Object.create(mod.exports.prototype);
+  Object.assign(p, { active: true, cfg: t.p.cfg, controllers: new Map([[t.c.view, t.c]]),
+    blocked: new WeakSet(), app: { workspace: { getLeavesOfType: () => [{ view: t.c.view }] } },
+    report() {}, paint() {} });
+  t.c.plugin = p; const guarded = t.r.setData;
+  p.scan(); assert.equal(t.r.setData, guarded); assert(t.c.active);
+  t.r.setData({ nodes: JSON.parse('{"__proto__":{"links":{}}}') });
+  assert.equal(t.c.g, null); assert.deepEqual(t.calls.at(-1), { nodes: {}, numLinks: 0 });
+  t.r.setData(raw); assert.equal(t.c.error, null); t.c.dispose();
+});
+
+check('Delayed startup query admits only stopped empty uncancelled completion', () => {
+  const t = fake(); t.c.dispose(); let running = true, cancelled = false, builds = 0;
+  const q = { items: { length: 1 }, runnable: { isRunning: () => running, isCancelled: () => cancelled },
+    cancel() { running = false; t.e.render(); cancelled = true; } };
+  t.e.setQuery = function () { this.queue = q; }; t.e.render = () => { builds++; t.r.setData(raw); };
+  const c = new NativeGraph(t.p, t.c.view, true); t.e.setQuery([]);
+  t.e.render(); assert.equal(builds, 0);
+  q.items.length = 0; t.e.render(); assert.equal(builds, 0);
+  running = false; t.e.render(); assert.equal(builds, 1); assert(!c.searchPending); c.dispose();
+});
+check('Async failure cancellation and disposal cannot release startup query gate', () => {
+  const t = fake(); t.c.dispose(); let running = true, cancelled = false, builds = 0;
+  const q = { items: { length: 0 }, runnable: { isRunning: () => running, isCancelled: () => cancelled },
+    cancel() { running = false; t.e.render(); cancelled = true; } };
+  t.e.setQuery = function () { this.queue = q; }; t.e.render = () => { builds++; t.r.setData(raw); };
+  const c = new NativeGraph(t.p, t.c.view, true); t.e.setQuery([]);
+  t.e.render(); assert.equal(builds, 0); assert(c.searchPending);
+  q.cancel(); assert.equal(builds, 0); assert(c.searchPending);
+  cancelled = false; running = true; t.e.setQuery([]);
+  const late = t.e.render; c.dispose(); running = false; late();
+  assert.equal(builds, 0); assert.equal(c.active, false);
+});
+check('A pending native view stays guarded until activation or explicit close', () => {
+  const mod = { exports: {} }, vm = require('node:vm');
+  const load = new vm.Script('(function(require,module){' + fs.readFileSync(path.join(__dirname, 'main.cjs'), 'utf8') + '\n})').runInThisContext();
+  load((name) => name === 'obsidian' ? { Plugin: class {}, Notice: class {}, apiVersion: '1.14.5' }
+    : name === './ui.cjs' ? {} : require(name), mod);
+  const t = earlyFixture(), p = Object.create(mod.exports.prototype);
+  Object.assign(p, { active: true, cfg: t.p.cfg, controllers: new Map([[t.c.view, t.c]]),
+    blocked: new WeakSet(), app: { workspace: { getLeavesOfType: () => [] } }, report() {}, paint() {} });
+  t.c.plugin = p;
+  const protectedSetter = t.r.setData; p.scan();
+  assert.equal(p.controllers.get(t.c.view), t.c); assert(t.c.active);
+  assert.equal(t.r.setData, protectedSetter);
+  t.c.view.onClose(); assert.equal(p.controllers.size, 0); assert.equal(t.c.active, false);
+});
+check('Replacing pending startup queries releases obsolete queue hooks immediately', () => {
+  const t = fake(); t.c.dispose(); const queues = []; let builds = 0;
+  t.e.render = () => { builds++; t.r.setData(raw); };
+  t.e.setQuery = function () {
+    this.queue?.cancel();
+    const q = { items: { length: 1 }, running: true, cancelled: false,
+      runnable: { isRunning: () => q.running, isCancelled: () => q.cancelled },
+      cancel() { this.running = false; t.e.render(); this.cancelled = true; } };
+    q.originalCancel = q.cancel; this.queue = q; queues.push(q);
+  };
+  const c = new NativeGraph(t.p, t.c.view, true), baseCleanup = c.cleanup.length;
+  for (let i = 0; i < 50; i++) {
+    t.e.setQuery([]); assert.equal(c.cleanup.length, baseCleanup);
+    for (const old of queues.slice(0, -1)) assert.equal(old.cancel, old.originalCancel);
+    assert.equal(c.startupQueue, queues.at(-1)); assert.equal(builds, 0);
+  }
+  const last = queues.at(-1); last.items.length = 0; last.running = false; t.e.render();
+  assert.equal(builds, 1); assert.equal(last.cancel, last.originalCancel);
+  assert.equal(c.startupQueue, null); assert.equal(c.startupCancel, null); c.dispose();
+});
 console.log(JSON.stringify({ passed: count, originalVaultTouched: false, networkUsed: false }));
