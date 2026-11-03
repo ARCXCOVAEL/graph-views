@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7 beta
+
+- Add Windows desktop Obsidian 1.15.0 to the verified compatibility allowlist. Keep support for Obsidian 1.14.4 and 1.14.5.
+
 ## 0.1.6 beta — 2026-11-02
 
 - Reject oversized native updates in every mode, keeping the last safe display or an empty display with actionable status.

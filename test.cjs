@@ -359,7 +359,8 @@ const vm = require('node:vm');
 for (const [version, accepted] of [
   ['1.14.4', true],
   ['1.14.5', true],
-  ['1.15.0', false],
+  ['1.15.0', true],
+  ['1.15.1', false],
 ])
   check('Entry point ' + (accepted ? 'admits verified ' : 'refuses unverified ') + version, () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'graph-views-version-')),
