@@ -1,6 +1,6 @@
 # Security and data handling
 
-Graph Views 0.1.7 beta supports Windows desktop Obsidian 1.14.4, 1.14.5, or 1.15.0.
+Graph Views 0.1.8 was tested on Windows desktop Obsidian 1.14.4, 1.14.5, 1.15.0, and 1.15.1.
 
 It reads native graph data, file paths and its own guide/preferences. It writes only its own preferences, previous-save copy, temporary files and cooperative lock. It makes no network requests, contains no telemetry and requires no account. It does not write original notes or change vault filtering.
 

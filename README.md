@@ -1,6 +1,6 @@
 # Graph Views
 
-**Public beta · created and maintained by ARCXCOVAEL LLC.**
+**Created and maintained by ARCXCOVAEL LLC.**
 
 Give Obsidian's existing graph three useful views without creating a separate graph or duplicating your notes.
 
@@ -14,11 +14,11 @@ Shift-click to select nodes, trace existing connections, fold Structure branches
 
 ## Compatibility
 
-Version **0.1.7 beta** supports **Windows desktop Obsidian 1.14.4, 1.14.5, or 1.15.0**. It uses undocumented native graph internals and deliberately refuses integration on other versions. Other desktop versions, operating systems and Android/iOS are not validated. The Graph core plugin must be enabled. Native Local Graph is unchanged.
+Version **0.1.8** was native-tested on **Windows desktop Obsidian 1.14.4, 1.14.5, 1.15.0, and 1.15.1**. It uses undocumented native graph internals and deliberately refuses integration on other versions. Other desktop versions, operating systems and Android/iOS are not validated. The Graph core plugin must be enabled. Native Local Graph is unchanged.
 
 This is an independently developed community addition, not an official Obsidian product. No account, service, network access or other plugin is required.
 
-## Install the Beta
+## Install Graph Views
 
 ### Community Plugins (recommended)
 
@@ -33,7 +33,7 @@ You can also find Graph Views on its [Community Plugins page](https://community.
 ### Manual installation from GitHub
 
 1. Save your work and close Obsidian. Keep an ordinary vault backup.
-2. Download **Graph-Views-0.1.7-beta.zip** from this product repository's [Releases page](https://github.com/ARCXCOVAEL/graph-views/releases).
+2. Download **Graph-Views-0.1.8.zip** from this product repository's [Releases page](https://github.com/ARCXCOVAEL/graph-views/releases).
 3. Extract its `graph-views` folder into your vault's `.obsidian/plugins/` directory.
 4. Reopen Obsidian and enable **Graph Views** under Settings → Community plugins.
 5. Open the native Graph view. The Graph Views toolbar appears above the existing canvas. Choose a root note to try Focused Writing or Structure.
@@ -48,7 +48,7 @@ Graph Views reads admitted native graph data and note paths to display connectio
 
 Plugin settings can reveal note paths. Review diagnostics before posting them; do not upload your vault or settings file. See [Security and data handling](SECURITY.md).
 
-## Beta limits
+## Current limits
 
 The three global views share mode/settings; selection and temporary traces belong to each pane. Large graphs can still be expensive. Native graph controls retain their immediate-query behavior. Graph-side editing of actual note links and mobile support are future work. Another person's installation, readability and interaction feedback are still needed.
 
@@ -56,7 +56,7 @@ Disable Graph Views to restore native graph behavior, retaining its settings for
 
 ## Source and license
 
-The source for this beta is provided in this repository under the [Mozilla Public License 2.0](LICENSE). Distributed changes to covered files must meet the MPL's source-availability requirements; private modifications do not require publication. See [retained notices and dependencies](THIRD_PARTY_NOTICES.md).
+The source for Graph Views is provided in this repository under the [Mozilla Public License 2.0](LICENSE). Distributed changes to covered files must meet the MPL's source-availability requirements; private modifications do not require publication. See [retained notices and dependencies](THIRD_PARTY_NOTICES.md).
 
 Build without downloads using Node.js 22 or later: `node test.cjs`, then `node build.cjs /absolute/path/to/new-output`. See [development](DEVELOPING.md) and [contributing](CONTRIBUTING.md).
 

@@ -1,10 +1,10 @@
-# Graph Views beta guide
+# Graph Views guide
 
-Created and maintained by ARCXCOVAEL LLC. Version 0.1.7 beta; Windows desktop Obsidian 1.14.4, 1.14.5, or 1.15.0.
+Created and maintained by ARCXCOVAEL LLC. Version 0.1.8. Tested on Windows desktop Obsidian 1.14.4, 1.14.5, 1.15.0, and 1.15.1.
 
 ## Start with your existing graph
 
-Requires Windows desktop Obsidian 1.14.4, 1.14.5, or 1.15.0, native Graph enabled, and Graph Views enabled. Open Graph view normally. A Graph Views toolbar appears above the **same native canvas**. Your file explorer, original notes and native graph controls remain available.
+Use Windows desktop Obsidian 1.14.4, 1.14.5, 1.15.0, and 1.15.1 with the native Graph and Graph Views enabled. Open Graph view normally. A Graph Views toolbar appears above the **same native canvas**. Your file explorer, original notes and native graph controls remain available.
 
 Use the mode dropdown. All open global Graph panes share mode/settings; selections and temporary path traces belong to each pane. Native Local Graph remains unchanged.
 

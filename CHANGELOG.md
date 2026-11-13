@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.8
+
+- First stable release. Adds Windows desktop support for Obsidian 1.15.1. Retains Windows desktop compatibility with Obsidian 1.14.4, 1.14.5, and 1.15.0.
+- Each listed Windows version passed 45 native checks, cold restart, and preference carryover from 0.1.7 in synthetic vaults. On 1.15.1, the settled tag filter matched Obsidian’s native graph.
+
 ## 0.1.7 beta
 
 - Add Windows desktop Obsidian 1.15.0 to the verified compatibility allowlist. Keep support for Obsidian 1.14.4 and 1.14.5.

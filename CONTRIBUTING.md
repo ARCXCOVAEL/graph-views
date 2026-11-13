@@ -4,7 +4,7 @@ Thank you for helping test and improve Graph Views, maintained by ARCXCOVAEL LLC
 
 ## Test and report
 
-Start with the tested Windows desktop Obsidian 1.14.4, 1.14.5, or 1.15.0 and the bundled guide. Report the plugin/Obsidian versions, operating system, steps, expected behavior and actual behavior. Small synthetic note examples are more useful than a private vault. Redact note names, paths, queries and screenshots before posting. Use the repository's issue templates.
+Start with the bundled guide and one of the Windows desktop Obsidian versions tested with Graph Views 0.1.8 (1.14.4, 1.14.5, 1.15.0, and 1.15.1). Report the plugin/Obsidian versions, operating system, steps, expected behavior and actual behavior. Small synthetic note examples are more useful than a private vault. Redact note names, paths, queries and screenshots before posting. Use the repository's issue templates.
 
 ## Source changes
 

@@ -35,7 +35,7 @@ module.exports = class GraphViews extends Plugin {
       name: 'Open guide',
       callback: () => new UI.Guide(this).open(),
     });
-    if (!['1.14.4', '1.14.5', '1.15.0'].includes(apiVersion)) {
+    if (!['1.14.4', '1.14.5', '1.15.0', '1.15.1'].includes(apiVersion)) {
       this.report(
         Error('Graph Views needs native compatibility verification for Obsidian ' + apiVersion),
       );
